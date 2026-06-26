@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 //variables
 const entities = [];
 let lastTime = 0;
@@ -23,9 +21,6 @@ const groundMaterial = new THREE.MeshStandardMaterial(0xff00ff);
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
-
-const player = new Player(new Vector3(0, 0.5, 0), new Vector3(1, 1, 1));
-entities.push(player);
 
 //control variables
 
@@ -83,6 +78,10 @@ class Player extends Entity {
         super.update(deltaTime);
     }
 }
+
+
+const player = new Player(new Vector3(0, 0.5, 0), new Vector3(1, 1, 1));
+entities.push(player);
 
 //functions
 
