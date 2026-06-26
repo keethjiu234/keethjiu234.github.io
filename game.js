@@ -1,6 +1,22 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+const entities = [];
+
+const camera = {
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height
+};
+
+const player = new Player(
+    new Vector2(100, 100),
+    new Vector2(50, 50)
+);
+
+let lastTime = 0;
+
 //classes
 
 class Vector2 {
@@ -51,16 +67,41 @@ class Entity {
     }
 }
 
-//actual game
+class Player extends Entity {
+    constructor(position, size) {
+        super(position, size);
+        this.speed = 250; // pixels per second
+    }
 
-const entities = [];
+    update(deltaTime) {
+        this.velocity.set(0, 0);
 
-const camera = {
-    x: 0,
-    y: 0,
-    width: canvas.width,
-    height: canvas.height
-};
+        if (keys["w"]) this.velocity.y = -this.speed;
+        if (keys["s"]) this.velocity.y = this.speed;
+        if (keys["a"]) this.velocity.x = -this.speed;
+        if (keys["d"]) this.velocity.x = this.speed;
+
+        if (this.velocity.x !== 0 && this.velocity.y !== 0) {
+            const inv = Math.SQRT1_2; // 1 / sqrt(2)
+            this.velocity.x *= inv;
+            this.velocity.y *= inv;
+        }
+
+        super.update(deltaTime);
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = "dodgerblue";
+        ctx.fillRect(
+            this.position.x,
+            this.position.y,
+            this.size.x,
+            this.size.y
+        );
+    }
+}
+
+//actual game funcs
 
 function isOnScreen(entity) {
     return !(
@@ -71,9 +112,6 @@ function isOnScreen(entity) {
     );
 }
 
-entities.push(new Entity(new Vector2(100, 100), new Vector2(50, 50)));
-
-let lastTime = 0;
 
 function gameLoop(timestamp) {
     const deltaTime = (timestamp - lastTime) / 1000;
@@ -100,5 +138,10 @@ function draw() {
         }
     }
 }
+
+
+//onstart
+
+entities.push(player);
 
 requestAnimationFrame(gameLoop);
