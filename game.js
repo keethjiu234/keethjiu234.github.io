@@ -16,37 +16,17 @@ const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 10, 5);
 scene.add(light);
 
-const groundGeometry = new THREE.PlaneGeometry(20, 20);
-const groundMaterial = new THREE.MeshStandardMaterial(0xff00ff);
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-
 //control variables
-
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
 //classes
-
-class Vector3 {
-    constructor(x = 0, y = 0, z = 0) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-    add(v) { this.x += v.x; this.y += v.y; this.z += v.z; return this; }
-    scale(s) { this.x *= s; this.y *= s; this.z *= s; return this; }
-    clone() { return new Vector3(this.x, this.y, this.z); }
-    set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
-}
-
 class Entity {
     constructor(position, size, color = 0xff00ff) {
         this.position = position;
         this.size = size;
-        this.velocity = new Vector3(0, 0, 0);
+        this.velocity = new THREE.Vector3(0, 0, 0);
 
         const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
         const material = new THREE.MeshStandardMaterial({ color });
@@ -56,7 +36,7 @@ class Entity {
     }
 
     update(deltaTime) {
-        this.position.add(this.velocity.clone().scale(deltaTime));
+        this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
     }
 }
@@ -80,11 +60,12 @@ class Player extends Entity {
 }
 
 
-const player = new Player(new Vector3(0, 0.5, 0), new Vector3(1, 1, 1));
+const player = new Player(new THREE.Vector3(0, 0.5, 0), new THREE.Vector3(1, 1, 1));
 entities.push(player);
 
-//functions
+const camOffset = new THREE.Vector3(0, 1, 3);
 
+//functions
 function gameLoop(timestamp) {
     const deltaTime = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
@@ -93,7 +74,7 @@ function gameLoop(timestamp) {
         e.update(deltaTime);
     }
 
-    camera.lookAt(player.mesh.position);
+    camera.position.copy(player.mesh.position).add(camOffset);
     renderer.render(scene, camera);
 
     requestAnimationFrame(gameLoop);
