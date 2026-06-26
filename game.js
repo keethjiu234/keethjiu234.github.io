@@ -70,7 +70,7 @@ class Entity {
 class Player extends Entity {
     constructor(position, size) {
         super(position, size);
-        this.speed = 250; // pixels per second
+        this.speed = 250; 
     }
 
     update(deltaTime) {
@@ -82,7 +82,7 @@ class Player extends Entity {
         if (keys["d"]) this.velocity.x = this.speed;
 
         if (this.velocity.x !== 0 && this.velocity.y !== 0) {
-            const inv = Math.SQRT1_2; // 1 / sqrt(2)
+            const inv = Math.SQRT1_2;
             this.velocity.x *= inv;
             this.velocity.y *= inv;
         }
