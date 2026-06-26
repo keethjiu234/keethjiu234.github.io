@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 
+//variables
+const entities = [];
+let lastTime = 0;
+
+//render variables
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -12,6 +17,23 @@ camera.position.set(0, 2, 5);
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 10, 5);
 scene.add(light);
+
+const groundGeometry = new THREE.PlaneGeometry(20, 20);
+const groundMaterial = new THREE.MeshStandardMaterial(0xff00ff);
+const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const player = new Player(new Vector3(0, 0.5, 0), new Vector3(1, 1, 1));
+entities.push(player);
+
+//control variables
+
+const keys = {};
+window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+//classes
 
 class Vector3 {
     constructor(x = 0, y = 0, z = 0) {
@@ -62,26 +84,15 @@ class Player extends Entity {
     }
 }
 
-const keys = {};
-window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+//functions
 
-const entities = [];
-const player = new Player(new Vector3(0, 0.5, 0), new Vector3(1, 1, 1));
-entities.push(player);
-
-const groundGeometry = new THREE.PlaneGeometry(20, 20);
-const groundMaterial = new THREE.MeshStandardMaterial(0xff00ff);
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-
-let lastTime = 0;
 function gameLoop(timestamp) {
     const deltaTime = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
 
-    for (const e of entities) e.update(deltaTime);
+    for (const e of entities) {
+        e.update(deltaTime);
+    }
 
     camera.lookAt(player.mesh.position);
     renderer.render(scene, camera);
