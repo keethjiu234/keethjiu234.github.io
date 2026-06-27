@@ -150,8 +150,6 @@ class Hand {
     }
 }
 
-
-
 //collision helpers
 function checkCollision(a, b) {
     return (
