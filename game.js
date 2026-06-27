@@ -55,16 +55,18 @@ const GRAVITY = -9.8;
 //classes
 class Entity {
     constructor(position, size, color = 0xff00ff, anchored = false) {
+        const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+        const material = new THREE.MeshStandardMaterial({ color });
+
         this.position = position;
         this.size = size;
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.anchored = anchored
         this.onGround = false;
-
-        const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-        const material = new THREE.MeshStandardMaterial({ color });
         this.mesh = new THREE.Mesh(geometry, material);
+        
         this.mesh.position.copy(position);
+
         scene.add(this.mesh);
     }
 
@@ -93,7 +95,7 @@ class Player extends Entity {
             -player.lookVector.x
         );
 
-        const move = new THREE.Vector3();
+        let move = new THREE.Vector3();
 
         if (keys["w"]) move.add(this.lookVector.clone().negate());
         if (keys["s"]) move.add(this.lookVector);
@@ -123,26 +125,25 @@ class Hand {
         const material = new THREE.MeshBasicMaterial({ color: 0xffcc99 });
 
         this.mesh = new THREE.Mesh(geometry, material);
-        scene.add(this.mesh);
-
         this.positionOffset = new THREE.Vector3(0.75, -0.5, -1);
         this.rotationOffset = new THREE.Euler(
             -Math.PI * 0.35,
             Math.PI * 0.25,
             0
         );
+
+        scene.add(this.mesh);
     }
 
-    update(camera) {
-        const handPos = this.positionOffset.clone().applyQuaternion(camera.quaternion);
+    update(camera, deltaTime) {
+        let handPos = this.positionOffset.clone();
+        let handRotation = camera.quaternion.clone();
+
+        handPos.applyQuaternion(camera.quaternion);
+        handRotation.multiply(new THREE.Quaternion().setFromEuler(this.rotationOffset));
 
         this.mesh.position.copy(camera.position).add(handPos);
-
-        const finalRotation = new THREE.Quaternion()
-            .copy(camera.quaternion)
-            .multiply(new THREE.Quaternion().setFromEuler(this.rotationOffset));
-
-        this.mesh.quaternion.copy(finalRotation);
+        this.mesh.quaternion.copy(handRotation);
     }
 }
 
@@ -213,7 +214,7 @@ function gameLoop(timestamp) {
     camera.rotation.x = pitch;
     player.lookVector = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
-    hand.update(camera);
+    hand.update(camera, deltaTime);
 
     renderer.render(scene, camera);
     requestAnimationFrame(gameLoop);
