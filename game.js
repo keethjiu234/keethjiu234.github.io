@@ -6,7 +6,7 @@ let lastTime = 0;
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000);
+renderer.setClearColor(0x87ceeb);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -64,7 +64,7 @@ class Entity {
         this.anchored = anchored
         this.onGround = false;
         this.mesh = new THREE.Mesh(geometry, material);
-        
+
         this.mesh.position.copy(position);
 
         scene.add(this.mesh);
@@ -73,9 +73,9 @@ class Entity {
     update(deltaTime) {
         if (this.anchored === false) {
             this.velocity.y += GRAVITY * deltaTime;
+            this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+            this.mesh.position.copy(this.position);
         }
-        this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
-        this.mesh.position.copy(this.position);
         resolveCollisions(this);
     }
 }
@@ -132,6 +132,9 @@ class Hand {
             0
         );
 
+        this.mesh.material.depthTest = false;
+        this.mesh.renderOrder = 9999;
+
         scene.add(this.mesh);
     }
 
@@ -163,24 +166,28 @@ function resolveCollisions(entity) {
 
     for (const other of entities) {
         if (other === entity) continue;
-
         if (!checkCollision(entity, other)) continue;
 
         const dx = entity.position.x - other.position.x;
         const dy = entity.position.y - other.position.y;
+        const dz = entity.position.z - other.position.z;
 
         const overlapX = (entity.size.x + other.size.x) / 2 - Math.abs(dx);
         const overlapY = (entity.size.y + other.size.y) / 2 - Math.abs(dy);
+        const overlapZ = (entity.size.z + other.size.z) / 2 - Math.abs(dz);
 
-        if (overlapX < overlapY) {
-            if (dx > 0) {
-                entity.position.x += overlapX;
-            } else {
-                entity.position.x -= overlapX;
-            }
+        if (overlapX < overlapY && overlapX < overlapZ) {
+            if (dx > 0) entity.position.x += overlapX;
+            else entity.position.x -= overlapX;
 
             entity.velocity.x = 0;
-        } else {
+
+            if (!other.anchored) {
+                other.position.x -= Math.sign(dx) * overlapX;
+                other.velocity.x = entity.velocity.x * 0.5; // push strength
+            }
+
+        } else if (overlapY < overlapZ) {
             if (dy > 0) {
                 entity.position.y += overlapY;
                 entity.velocity.y = 0;
@@ -189,15 +196,29 @@ function resolveCollisions(entity) {
                 entity.position.y -= overlapY;
                 entity.velocity.y = 0;
             }
+        } else {
+            if (dz > 0) entity.position.z += overlapZ;
+            else entity.position.z -= overlapZ;
+
+            entity.velocity.z = 0;
+            if (!other.anchored) {
+                other.position.z -= Math.sign(dz) * overlapZ;
+                other.velocity.z = entity.velocity.z * 0.5;
+            }
         }
     }
 }
+
+
 // create objects
 const player = new Player(new THREE.Vector3(0, 20, 0), new THREE.Vector3(1, 4, 1));
 entities.push(player);
 
-const ground = new Entity(new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(50, 1, 50), 0xffffff, true);
+const ground = new Entity(new THREE.Vector3(0, 0, 0), new THREE.Vector3(50, 1, 50), 0xffffff, true);
 entities.push(ground);
+
+const ground2 = new Entity(new THREE.Vector3(0, 19, 0), new THREE.Vector3(1,1,1), 0xD9D9D9);
+entities.push(ground2);
 
 const hand = new Hand();
 
