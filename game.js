@@ -18,12 +18,16 @@ scene.add(light);
 
 //control variables
 const keys = {};
-window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-// mouse look
+//mouse look
 let yaw = 0;
 let pitch = 0;
+let sensitivity = 0.005
+
+//events
+
+window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
 canvas.addEventListener("click", () => {
     canvas.requestPointerLock();
@@ -31,13 +35,21 @@ canvas.addEventListener("click", () => {
 
 document.addEventListener("mousemove", e => {
     if (document.pointerLockElement === canvas) {
-        yaw -= e.movementX * 0.002;
-        pitch -= e.movementY * 0.002;
+        yaw -= e.movementX * sensitivity;
+        pitch -= e.movementY * sensitivity;
         pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
     }
 });
 
-// physics
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+
+//physics
 const GRAVITY = -9.8;
 
 //classes
@@ -69,8 +81,9 @@ class Entity {
 class Player extends Entity {
     constructor(position, size) {
         super(position, size, 0x1e90ff);
-        this.speed = 5;
-        this.lookVector = new THREE.Vector3()
+        this.speed = 10;
+        this.jump = 6;
+        this.lookVector = new THREE.Vector3();
     }
 
     update(deltaTime) {
@@ -97,14 +110,45 @@ class Player extends Entity {
         }
 
         if (this.onGround && keys[" "]) {
-            this.velocity.y = 6;
+            this.velocity.y = this.jump;
         }
 
         super.update(deltaTime);
     }
 }
 
-// collision helpers
+class Hand {
+    constructor() {
+        const geometry = new THREE.BoxGeometry(0.4, 0.8, 0.4);
+        const material = new THREE.MeshBasicMaterial({ color: 0xffcc99 });
+
+        this.mesh = new THREE.Mesh(geometry, material);
+        scene.add(this.mesh);
+
+        this.positionOffset = new THREE.Vector3(0.75, -0.5, -1);
+        this.rotationOffset = new THREE.Euler(
+            -Math.PI * 0.35,
+            Math.PI * 0.25,
+            0
+        );
+    }
+
+    update(camera) {
+        const handPos = this.positionOffset.clone().applyQuaternion(camera.quaternion);
+
+        this.mesh.position.copy(camera.position).add(handPos);
+
+        const finalRotation = new THREE.Quaternion()
+            .copy(camera.quaternion)
+            .multiply(new THREE.Quaternion().setFromEuler(this.rotationOffset));
+
+        this.mesh.quaternion.copy(finalRotation);
+    }
+}
+
+
+
+//collision helpers
 function checkCollision(a, b) {
     return (
         Math.abs(a.position.x - b.position.x) * 2 < (a.size.x + b.size.x) &&
@@ -154,6 +198,8 @@ entities.push(player);
 const ground = new Entity(new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(50, 1, 50), 0xffffff, true);
 entities.push(ground);
 
+const hand = new Hand();
+
 // game loop
 function gameLoop(timestamp) {
     const deltaTime = (timestamp - lastTime) / 1000;
@@ -166,6 +212,8 @@ function gameLoop(timestamp) {
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
     player.lookVector = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+
+    hand.update(camera);
 
     renderer.render(scene, camera);
     requestAnimationFrame(gameLoop);
